@@ -74,3 +74,44 @@ class ProductShowView(View):
         }
         
         return render(request, self.template_name, viewData)
+
+class ProductForm(forms.Form):
+    name = forms.CharField(required=True)
+    price = forms.FloatField(required=True)
+
+    def clean_price(self):
+        price = self.cleaned_data.get('price')
+        if price <= 0:
+            raise forms.ValidationError('Price must be greater than 0.')
+        return price
+
+class ProductCreateView(View):
+    template_name = 'products/create.html'
+
+    def get(self, request):
+        form = ProductForm()
+        viewData = {}
+        viewData["title"] = "Create product"
+        viewData["form"] = form
+        return render(request, self.template_name, viewData)
+
+    def post(self, request):
+        form = ProductForm(request.POST)
+
+        if form.is_valid():
+            new_id = str(len(Product.products) + 1)
+            Product.products.append({
+                "id": new_id,
+                "name": form.cleaned_data['name'],
+                "description": "No description",
+                "price": form.cleaned_data['price']
+            })
+            # REDIRECT CON PARAMETRO GET
+            return render(request, 'products/created.html')
+
+        else:
+            viewData = {
+                "title": "Create product",
+                "form": form
+            }
+            return render(request, self.template_name, viewData)
